@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Заказы</title>
+</head>
+<body>
+<h1>Журнал путевых записей</h1>
+{% if notes is not None %}
+<table border="5" bgcolor="#cccccc">
+
+   <tr>
+        <th>Гос. номер</th>
+        <th>Имя</th>
+        <th>Фамилия</th>
+        <th>Отчество</th>
+        <th>Марка ТС</th>
+        <th>Дата выезда</th>
+        <th>Время</th>
+        <th>Показание одометра</th>
+   </tr>
+    {% for note in notes %}
+   <tr>
+       <td>{{ note.tr_reg_num }}</td>
+       <td>{{ note.surname }}</td>
+       <td>{{ note.name }}</td>
+       <td>{{ note.patronymic }}</td>
+       <td>{{ note.tr_mark }}</td>
+       <td>{{ note.date }}</td>
+       <td>{{ note.time }}</td>
+       <td>{{ note.odometer_value }}</td>
+   </tr>
+    {% endfor %}
+
+</table>
+{% endif %}
+</body>
+</html>

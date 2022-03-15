@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Заказы</title>
+</head>
+<body>
+
+{% if orders is not None %}
+<table border="5" bgcolor="#cccccc">
+    {% for order in orders %}
+   <tr>
+        <th>id заказа</th>
+        <th>Клиент</th>
+        <th>Сервис</th>
+        <th>Тариф</th>
+        <th>Откуда</th>
+        <th>Куда</th>
+        <th>Стоимость заказа</th>
+        <th>Комментарий</th>
+   </tr>
+   <tr>
+       <td>{{ order.order_id }}</td>
+       <td>{{ order.owner }}</td>
+       <td>{{ order.service }}</td>
+       <td>{{ order.tariff }}</td>
+       <td>{{ order.from_location }}</td>
+       <td>{{ order.to_location }}</td>
+       <td>{{ order.order_cost }}</td>
+       <td>{{ order.comment }}</td>
+   </tr>
+    {% endfor %}
+
+</table>
+{% endif %}
+</body>
+</html>
