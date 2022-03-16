@@ -45,6 +45,7 @@ def drivers_info(subscribers: []):
     counter = 0
     names_drivers = []
     surnames_drivers = []
+    car_brands = []
     car_models = []
     car_numbers = []
     lic_numbers = []
@@ -55,10 +56,15 @@ def drivers_info(subscribers: []):
             lq_obj = lq.get()
             names_drivers.append(lq_obj.name)
             surnames_drivers.append(lq_obj.surname)
-            car_models.append(lq_obj.car_brand + " " + lq_obj.car_model)
+            if len(lq_obj.car_brand + " " + lq_obj.car_model) > 15:
+                car_brands.append(lq_obj.car_brand)
+                car_models.append(lq_obj.car_model)
+            else:
+                car_brands.append(lq_obj.car_brand + " " + lq_obj.car_model)
+                car_models.append("")
             car_numbers.append(lq_obj.car_number)
             lic_numbers.append(lq_obj.license_number)
-    return names_drivers, surnames_drivers, car_models, car_numbers, lic_numbers, counter
+    return names_drivers, surnames_drivers, car_brands, car_models, car_numbers, lic_numbers, counter
 
 
 def search_result(request):
@@ -190,7 +196,7 @@ def set_found_subscribers(searched_phones, set_subscribers, set_ws_duplicate, su
 
 
 def response(request, search_by, subscribers, searched_phones_subscribers_str, info_car_licensing, text=''):
-    number_of_subscribers = info_car_licensing[5]
+    number_of_subscribers = info_car_licensing[6]
     counter = []
     for i in range(int(number_of_subscribers)):
         if i % 2 == 0:
@@ -198,7 +204,7 @@ def response(request, search_by, subscribers, searched_phones_subscribers_str, i
         else:
             counter.append('b')
     subscribers_info = zip(subscribers, info_car_licensing[0], info_car_licensing[1], info_car_licensing[2],
-                           info_car_licensing[3], info_car_licensing[4])
+                           info_car_licensing[3], info_car_licensing[4],  info_car_licensing[5])
     return render(request, "html-templates/get-user-list.html",
                   {"subscribers": subscribers_info,
                    "searched_phones": searched_phones_subscribers_str,

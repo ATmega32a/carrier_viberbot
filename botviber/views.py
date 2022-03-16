@@ -97,8 +97,8 @@ def set_driver(request, subscriber_id, searched_phones='', search_by='by_name'):
         current_subscribers.sort(key=_sort_by_name)
         info_car_licensing = drivers_info(current_subscribers)
         subscribers_info = zip(current_subscribers, info_car_licensing[0], info_car_licensing[1], info_car_licensing[2],
-                               info_car_licensing[3], info_car_licensing[4])
-        number_of_subscribers = info_car_licensing[5]
+                               info_car_licensing[3], info_car_licensing[4], info_car_licensing[5])
+        number_of_subscribers = info_car_licensing[6]
         counter = []
         for i in range(int(number_of_subscribers)):
             if i % 2 == 0:
@@ -140,8 +140,8 @@ def enable_client(request, subscriber_id, searched_phones='', search_by='by_name
         current_subscribers.sort(key=sort_by_name)
         info_car_licensing = drivers_info(current_subscribers)
         subscribers_info = zip(current_subscribers, info_car_licensing[0], info_car_licensing[1], info_car_licensing[2],
-                               info_car_licensing[3], info_car_licensing[4])
-        number_of_subscribers = info_car_licensing[5]
+                               info_car_licensing[3], info_car_licensing[4], info_car_licensing[5])
+        number_of_subscribers = info_car_licensing[6]
         counter = []
         for i in range(int(number_of_subscribers)):
             if i % 2 == 0:
@@ -180,8 +180,8 @@ def make_all_drivers(request, searched_phones='', search_by='by_name'):
         current_subscribers.sort(key=sort_by_name)
         info_car_licensing = drivers_info(current_subscribers)
         subscribers_info = zip(current_subscribers, info_car_licensing[0], info_car_licensing[1], info_car_licensing[2],
-                               info_car_licensing[3], info_car_licensing[4])
-        number_of_subscribers = info_car_licensing[5]
+                               info_car_licensing[3], info_car_licensing[4], info_car_licensing[5])
+        number_of_subscribers = info_car_licensing[6]
         counter = []
         for i in range(int(number_of_subscribers)):
             if i % 2 == 0:
@@ -220,8 +220,8 @@ def make_all_clients(request, searched_phones='', search_by='by_name'):
         current_subscribers.sort(key=sort_by_name)
         info_car_licensing = drivers_info(current_subscribers)
         subscribers_info = zip(current_subscribers, info_car_licensing[0], info_car_licensing[1], info_car_licensing[2],
-                               info_car_licensing[3], info_car_licensing[4])
-        number_of_subscribers = info_car_licensing[5]
+                               info_car_licensing[3], info_car_licensing[4], info_car_licensing[5])
+        number_of_subscribers = info_car_licensing[6]
         counter = []
         for i in range(int(number_of_subscribers)):
             if i % 2 == 0:
@@ -260,8 +260,8 @@ def enable_all_selected(request, searched_phones='', search_by='by_name'):
         current_subscribers.sort(key=sort_by_name)
         info_car_licensing = drivers_info(current_subscribers)
         subscribers_info = zip(current_subscribers, info_car_licensing[0], info_car_licensing[1], info_car_licensing[2],
-                               info_car_licensing[3], info_car_licensing[4])
-        number_of_subscribers = info_car_licensing[5]
+                               info_car_licensing[3], info_car_licensing[4], info_car_licensing[5])
+        number_of_subscribers = info_car_licensing[6]
         counter = []
         for i in range(int(number_of_subscribers)):
             if i % 2 == 0:
@@ -300,8 +300,8 @@ def disable_all_selected(request, searched_phones='', search_by='by_name'):
         current_subscribers.sort(key=sort_by_name)
         info_car_licensing = drivers_info(current_subscribers)
         subscribers_info = zip(current_subscribers, info_car_licensing[0], info_car_licensing[1], info_car_licensing[2],
-                               info_car_licensing[3], info_car_licensing[4])
-        number_of_subscribers = info_car_licensing[5]
+                               info_car_licensing[3], info_car_licensing[4], info_car_licensing[5])
+        number_of_subscribers = info_car_licensing[6]
         counter = []
         for i in range(int(number_of_subscribers)):
             if i % 2 == 0:

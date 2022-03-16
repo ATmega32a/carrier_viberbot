@@ -41,7 +41,7 @@ class Questionnaire(models.Model):
 
 
 class LicensingQuestionnaire(models.Model):
-    applicant = models.ForeignKey(Subscriber, on_delete=models.CASCADE, verbose_name="Соискатель")
+    applicant = models.ForeignKey(Subscriber, on_delete=models.CASCADE, verbose_name="Водитель")
     name = models.CharField("Имя", max_length=100, default="")
     surname = models.CharField("Фамилия", max_length=100, default="")
     phone = models.CharField("Номер телефона", max_length=50, default="")
@@ -61,7 +61,7 @@ class LicensingQuestionnaire(models.Model):
     photo_sts_back_side_path = models.CharField("СТС задняя сторона", max_length=512,
                                                 default=str(Path(MEDIA_ROOT)) + "\\no_photo.png")
 
-    license_number = models.CharField("Номер лицензии", max_length=6, default="Номер лицензии не указан")
+    license_number = models.CharField("Номер лицензии", max_length=30, default="Номер лицензии не указан")
 
     # def image_passport_first(self):
     #     if self.photo_passport_first:

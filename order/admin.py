@@ -36,16 +36,12 @@ class ViewQuestionnaire(admin.ModelAdmin):
 class ViewLicensingQuestionnaire(admin.ModelAdmin):
     list_display = (
         'license_number',
-        'applicant',
-        'name',
         'surname',
+        'name',
         'phone',
-        'car_number',
+        'car_brand',
         'car_model',
-        'photo_passport_first_path',
-        'photo_passport_reg_path',
-        'photo_sts_front_side_path',
-        'photo_sts_back_side_path'
+        'car_number',
     )
 
 
