@@ -35,7 +35,6 @@ class ViewQuestionnaire(admin.ModelAdmin):
 @admin.register(LicensingQuestionnaire)
 class ViewLicensingQuestionnaire(admin.ModelAdmin):
     list_display = (
-        'license_number',
         'surname',
         'name',
         'phone',
@@ -53,8 +52,10 @@ class ViewWaybillEntry(admin.ModelAdmin):
         'name',
         'patronymic',
         'tr_mark',
+        'tr_model',
         'ser_doc',
         'num_doc',
+        'num_lic',
         'kod_org_doc'
     )
 
@@ -68,6 +69,8 @@ class ViewWaybillNote(admin.ModelAdmin):
         'name',
         'patronymic',
         'tr_mark',
+        'tr_model',
+        'num_lic',
         'date',
         'time',
         'time_zone',
@@ -90,12 +93,13 @@ class ViewWaybillJournal(admin.ModelAdmin):
     )
 
 
-@admin.register(Car)
-class ViewCar(admin.ModelAdmin):
-    list_display = (
-        'car_owner',
-        'car_brand',
-        'car_model',
-        'car_number'
-    )
+# @admin.register(Car)
+# class ViewCar(admin.ModelAdmin):
+#     list_display = (
+#         'car_owner',
+#         'car_brand',
+#         'car_model',
+#         'car_number'
+#     )
 
+admin.site.register(Car)

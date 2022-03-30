@@ -38,8 +38,7 @@ class LicensingQuestions(models.Model):
         question_7 = "Отправьте фото паспорта (прописка)", _("Отправьте фото паспорта (прописка)")
         question_8 = "Отправьте фото лицевой стороны СТС", _("Отправьте лицевой задней стороны СТС")
         question_9 = "Отправьте фото задней стороны СТС", _("Отправьте фото задней стороны СТС")
-        question_10 = "Введите номер лицензии", _("Введите номер лицензии")
-        question_11 = "Ваша заявка отправлена!", _("Ваша заявка отправлена!")
+        question_10 = "Ваша заявка отправлена!", _("Ваша заявка отправлена!")
 
     questions = models.CharField(verbose_name="Вопросы", max_length=100,
                                  choices=LicensingQuestion.choices, default="")
@@ -52,16 +51,27 @@ class WaybillQuestions(models.Model):
         question_2 = "Напишите ваше отчество", _("Напишите ваше отчество")
         question_3 = "Серия водительского удостоверения", _("Серия водительского удостоверения")
         question_4 = "Номер водительского удостоверения", _("Номер водительского удостоверения")
-
-        question_5 = "Класс ТС (B, C... )", _("Класс ТС (B, C... )")
-        question_6 = "Гос. номер ТС", _("Гос. номер ТС")
-        question_7 = "Марка ТС", _("Марка ТС")
-        question_8 = "Показание одометра", _("Показание одометра")
-        question_9 = "Для корректной работы сервиса введите ваше текущее время в формате: ЧЧ-ММ", \
-                     _("Для корректной работы сервиса введите ваше текущее время в формате: ЧЧ-ММ")
-        question_10 = "Ваша заявка отправлена!", _("Ваша заявка отправлена!")
+        question_5 = "Введите номер лицензии", _("Введите номер лицензии")
+        question_6 = "Класс ТС (B, C... )", _("Класс ТС (B, C... )")
+        question_7 = "Гос. номер ТС", _("Гос. номер ТС")
+        question_8 = "Марка ТС", _("Марка ТС")
+        question_9 = "Модель ТС", _("Модель ТС")
+        question_10 = "Показание одометра", _("Показание одометра")
+        question_11 = "Для корректной работы сервиса введите ваше текущее время в формате: ЧЧ-ММ", \
+                      _("Для корректной работы сервиса введите ваше текущее время в формате: ЧЧ-ММ")
+        question_12 = "Ваша заявка отправлена!", _("Ваша заявка отправлена!")
 
     questions = models.CharField(verbose_name="Вопросы", max_length=100,
+                                 choices=WaybillQuestion.choices, default="")
+
+
+class CarCreateQuestions(models.Model):
+    class WaybillQuestion(models.TextChoices):
+        question_0 = "Напишите марку автомобиля", _("Напишите марку автомобиля")
+        question_1 = "Напишите модель автомобиля", _("Напишите модель автомобиля")
+        question_2 = "Напишите номер автомобиля", _("Напишите номер автомобиля")
+        question_3 = "Сохранить", _("Сохранить")
+    questions = models.CharField(verbose_name="Сообщения при нажатии на кнопки меню создания автомобиля", max_length=100,
                                  choices=WaybillQuestion.choices, default="")
 
 
@@ -106,11 +116,11 @@ class LicensingQuestionnaireButtons(models.Model):
     buttons = models.ManyToManyField(Button, related_name="licensing_buttons")
 
     def create_buttons(self):
-        # count = -1
-        count = 0
+        count = -1
+        # count = 0
         for q in LicensingQuestions.LicensingQuestion:
-            # count += 1
-            if q == LicensingQuestions.LicensingQuestion.question_11:  # ИСПРАВИТЬ !!!!! на LicensingQuestions.LicensingQuestion и
+            count += 1
+            if q == LicensingQuestions.LicensingQuestion.question_10:  # ИСПРАВИТЬ !!!!! на LicensingQuestions.LicensingQuestion и
                 # и пересмотреть по коду индекс
                 button = Button(button_id=count, bg_color=non_active_button_color, action_type="none", action_body=q)
                 button.save()
@@ -120,7 +130,6 @@ class LicensingQuestionnaireButtons(models.Model):
                 button = Button(button_id=count, bg_color=bg_color, action_type="reply", action_body=q)
                 button.save()
                 self.buttons.add(button)
-            count += 1
 
         self.save()
 
@@ -142,7 +151,9 @@ class WaybillQuestionnaireButtons(models.Model):
         count = -1
         for q in WaybillQuestions.WaybillQuestion:
             count += 1
-            if q == WaybillQuestions.WaybillQuestion.question_10:
+            print("count", count)
+            if q == WaybillQuestions.WaybillQuestion.question_12:
+
                 button = Button(button_id=count, bg_color=non_active_button_color, action_type="none", action_body=q)
                 button.save()
                 self.buttons.add(button)
@@ -152,6 +163,7 @@ class WaybillQuestionnaireButtons(models.Model):
                 button.save()
                 self.buttons.add(button)
 
+        print("count", count)
         self.save()
 
     def get_buttons(self):
@@ -172,3 +184,30 @@ class ConditionsForRegions(models.Model):
         verbose_name_plural = "Условия для регионов"
 
 
+class CarQuestionnaireButtons(models.Model):
+    user = models.ForeignKey(Subscriber, on_delete=models.CASCADE)
+    buttons = models.ManyToManyField(Button, related_name="car_buttons")
+
+    def create_buttons(self):
+        count = -1
+        for q in Questions.Question:
+            count += 1
+            if q == Questions.Question.question_3:
+                button = Button(button_id=count, bg_color=non_active_button_color, action_type="none", action_body=q)
+                button.save()
+                self.buttons.add(button)
+
+            else:
+                button = Button(button_id=count, bg_color=bg_color, action_type="reply", action_body=q)
+                button.save()
+                self.buttons.add(button)
+
+        self.save()
+
+    def get_buttons(self):
+        return ",\n".join(
+            [str(i.bg_color) + " " + str(i.action_type) + " " + str(i.action_body) + "\n" for i in self.buttons.all()])
+
+    class Meta:
+        verbose_name = "Кнопка меню добавления автомобиля"
+        verbose_name_plural = "Кнопки меню добавления автомобиля"

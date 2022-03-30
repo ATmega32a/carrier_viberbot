@@ -5,10 +5,10 @@ from viberbot.api.messages import RichMediaMessage, TextMessage, KeyboardMessage
 
 import properties
 from botviber.models import QuestionnaireButtons, ConditionsForRegions, LicensingQuestionnaireButtons, \
-    WaybillQuestionnaireButtons
+    WaybillQuestionnaireButtons, CarQuestionnaireButtons
 from carrier_viberbot.get_distance import is_appropriate_address
 from customer.models import Subscriber, Driver
-from order.models import Order
+from order.models import Order, Car
 
 bg_color = "#008B8B"
 text_color = "#FFFFFF"
@@ -45,6 +45,14 @@ def is_exists_waybill_buttons(vid):
         waybill_question_buttons.create_buttons()
 
 
+def is_exists_car_buttons(vid):
+    s = Subscriber.objects.get(user=vid)
+    if not CarQuestionnaireButtons.objects.filter(user=s).exists():
+        CarQuestionnaireButtons.objects.create(user=s)
+        car_question_buttons = CarQuestionnaireButtons.objects.get(user=s)
+        car_question_buttons.create_buttons()
+
+
 def set_button(vid, but_id, answered=False):
     subscriber = Subscriber.objects.get(user=vid)
     questionnaire_buttons = QuestionnaireButtons.objects.get(user=subscriber)
@@ -69,7 +77,7 @@ def set_license_button(vid, but_id, answered=False):
     button.action_type = "none"
     button.save()
     if answered:
-        button = license_questionnaire_buttons.buttons.get(button_id="11")
+        button = license_questionnaire_buttons.buttons.get(button_id="10")
         button.bg_color = bg_color
         button.action_type = "reply"
         button.save()
@@ -85,11 +93,27 @@ def set_waybill_button(vid, but_id, answered=False):
     button.action_type = "none"
     button.save()
     if answered:
-        button = waybill_questionnaire_buttons.buttons.get(button_id="10")
+        button = waybill_questionnaire_buttons.buttons.get(button_id="12")
         button.bg_color = bg_color
         button.action_type = "reply"
         button.save()
     waybill_questionnaire_buttons.save()
+    return button.action_body
+
+
+def set_car_button(vid, but_id, answered=False):
+    subscriber = Subscriber.objects.get(user=vid)
+    car_questionnaire_buttons = CarQuestionnaireButtons.objects.get(user=subscriber)
+    button = car_questionnaire_buttons.buttons.get(button_id=but_id)
+    button.bg_color = non_active_button_color
+    button.action_type = "none"
+    button.save()
+    if answered:
+        button = car_questionnaire_buttons.buttons.get(button_id="3")
+        button.bg_color = bg_color
+        button.action_type = "reply"
+        button.save()
+    car_questionnaire_buttons.save()
     return button.action_body
 
 
@@ -127,12 +151,12 @@ def set_default_license_buttons(vid):
     subscriber = Subscriber.objects.get(user=vid)
     license_questionnaire_buttons = LicensingQuestionnaireButtons.objects.get(user=subscriber)
 
-    for i in ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
+    for i in ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9",):
         button = license_questionnaire_buttons.buttons.get(button_id=i)
         button.bg_color = bg_color
         button.action_type = "reply"
         button.save()
-    button = license_questionnaire_buttons.buttons.get(button_id="11")
+    button = license_questionnaire_buttons.buttons.get(button_id="10")
     button.bg_color = non_active_button_color
     button.action_type = "none"
     button.save()
@@ -143,16 +167,32 @@ def set_default_waybill_buttons(vid):
     subscriber = Subscriber.objects.get(user=vid)
     waybill_questionnaire_buttons = WaybillQuestionnaireButtons.objects.get(user=subscriber)
 
-    for i in ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9",):
+    for i in ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11",):
         button = waybill_questionnaire_buttons.buttons.get(button_id=i)
         button.bg_color = bg_color
         button.action_type = "reply"
         button.save()
-    button = waybill_questionnaire_buttons.buttons.get(button_id="10")
+    button = waybill_questionnaire_buttons.buttons.get(button_id="12")
     button.bg_color = non_active_button_color
     button.action_type = "none"
     button.save()
     waybill_questionnaire_buttons.save()
+
+
+def set_default_car_buttons(vid):
+    subscriber = Subscriber.objects.get(user=vid)
+    car_questionnaire_buttons = CarQuestionnaireButtons.objects.get(user=subscriber)
+
+    for i in ("0", "1", "2",):
+        button = car_questionnaire_buttons.buttons.get(button_id=i)
+        button.bg_color = bg_color
+        button.action_type = "reply"
+        button.save()
+    button = car_questionnaire_buttons.buttons.get(button_id="3")
+    button.bg_color = non_active_button_color
+    button.action_type = "none"
+    button.save()
+    car_questionnaire_buttons.save()
 
 
 def get_button(vid, but_id):
@@ -173,6 +213,13 @@ def get_waybill_button(vid, but_id):
     subscriber = Subscriber.objects.get(user=vid)
     waybill_questionnaire_buttons = WaybillQuestionnaireButtons.objects.get(user=subscriber)
     button = waybill_questionnaire_buttons.buttons.get(button_id=but_id)
+    return button.bg_color, button.action_type, button.action_body
+
+
+def get_car_button(vid, but_id):
+    subscriber = Subscriber.objects.get(user=vid)
+    car_buttons = CarQuestionnaireButtons.objects.get(user=subscriber)
+    button = car_buttons.buttons.get(button_id=but_id)
     return button.bg_color, button.action_type, button.action_body
 
 
@@ -1226,13 +1273,22 @@ def show_all_orders_or_less_remote_locations_kb():
                 "Text": "<font color='#FFFFFF'>Показать ближайшие к Вам заказы</font>",
                 "BgColor": bg_color
             },
+            # {
+            #     "Columns": 6,
+            #     "Rows": 1,
+            #     "ActionBody": "balance-info",
+            #     "ActionType": "reply",
+            #     "Silent": "true",
+            #     "Text": "<font color='#FFFFFF'>Информация о балансе</font>",
+            #     "BgColor": bg_color
+            # },
             {
                 "Columns": 6,
                 "Rows": 1,
-                "ActionBody": "balance-info",
+                "ActionBody": "cars",
                 "ActionType": "reply",
                 "Silent": "true",
-                "Text": "<font color='#FFFFFF'>Информация о балансе</font>",
+                "Text": "<font color='#FFFFFF'>Автомобили</font>",
                 "BgColor": bg_color
             },
             {
@@ -1464,15 +1520,15 @@ def license_form(vid, number_button=None, text=None, order_data="", text_field="
                 "Text": "<font color='#FFFFFF'>Отправить фото задней стороны СТС</font>",
                 "BgColor": get_license_button(vid, "9")[0]
             },
-            {
-                "Columns": 3,
-                "Rows": 1,
-                "ActionBody": "license_10_Введите номер лицензии",
-                "ActionType": get_license_button(vid, "10")[1],
-                "Silent": "true",
-                "Text": "<font color='#FFFFFF'>Введите номер лицензии</font>",
-                "BgColor": get_license_button(vid, "10")[0]
-            },
+            # {
+            #     "Columns": 3,
+            #     "Rows": 1,
+            #     "ActionBody": "license_10_Введите номер лицензии",
+            #     "ActionType": get_license_button(vid, "10")[1],
+            #     "Silent": "true",
+            #     "Text": "<font color='#FFFFFF'>Введите номер лицензии</font>",
+            #     "BgColor": get_license_button(vid, "10")[0]
+            # },
             {
                 "Columns": 3,
                 "Rows": 1,
@@ -1483,13 +1539,13 @@ def license_form(vid, number_button=None, text=None, order_data="", text_field="
                 "BgColor": bg_color
             },
             {
-                "Columns": 6,
+                "Columns": 3,
                 "Rows": 1,
                 "ActionBody": "send_licensing_application",
-                "ActionType": get_license_button(vid, "11")[1],
+                "ActionType": get_license_button(vid, "10")[1],
                 "Silent": "true",
                 "Text": "<font color='#FFFFFF'>Отправить заявку</font>",
-                "BgColor": get_license_button(vid, "11")[0]
+                "BgColor": get_license_button(vid, "10")[0]
             }
         ]
     }
@@ -1658,7 +1714,7 @@ def waybill_form(vid, number_button=None, text=None, order_data="", text_field="
                 "ActionBody": "waybill_5_" + get_waybill_button(vid, "5")[2],
                 "ActionType": get_waybill_button(vid, "5")[1],
                 "Silent": "true",
-                "Text": "<font color='#FFFFFF'>Класс ТС</font>",
+                "Text": "<font color='#FFFFFF'>Номер лицензии</font>",
                 "BgColor": get_waybill_button(vid, "5")[0]
             },
             {
@@ -1667,7 +1723,7 @@ def waybill_form(vid, number_button=None, text=None, order_data="", text_field="
                 "ActionBody": "waybill_6_" + get_waybill_button(vid, "6")[2],
                 "ActionType": get_waybill_button(vid, "6")[1],
                 "Silent": "true",
-                "Text": "<font color='#FFFFFF'>Гос. номер ТС</font>",
+                "Text": "<font color='#FFFFFF'>Класс ТС</font>",
                 "BgColor": get_waybill_button(vid, "6")[0]
             },
             {
@@ -1676,7 +1732,7 @@ def waybill_form(vid, number_button=None, text=None, order_data="", text_field="
                 "ActionBody": "waybill_7_" + get_waybill_button(vid, "7")[2],
                 "ActionType": get_waybill_button(vid, "7")[1],
                 "Silent": "true",
-                "Text": "<font color='#FFFFFF'>Марка ТС</font>",
+                "Text": "<font color='#FFFFFF'>Гос. номер ТС</font>",
                 "BgColor": get_waybill_button(vid, "7")[0]
             },
             {
@@ -1685,7 +1741,7 @@ def waybill_form(vid, number_button=None, text=None, order_data="", text_field="
                 "ActionBody": "waybill_8_" + get_waybill_button(vid, "8")[2],
                 "ActionType": get_waybill_button(vid, "8")[1],
                 "Silent": "true",
-                "Text": "<font color='#FFFFFF'>Показание одометра</font>",
+                "Text": "<font color='#FFFFFF'>Марка ТС</font>",
                 "BgColor": get_waybill_button(vid, "8")[0]
             },
             {
@@ -1694,8 +1750,26 @@ def waybill_form(vid, number_button=None, text=None, order_data="", text_field="
                 "ActionBody": "waybill_9_" + get_waybill_button(vid, "9")[2],
                 "ActionType": get_waybill_button(vid, "9")[1],
                 "Silent": "true",
-                "Text": "<font color='#FFFFFF'>Установка времени</font>",
+                "Text": "<font color='#FFFFFF'>Модель ТС</font>",
                 "BgColor": get_waybill_button(vid, "9")[0]
+            },
+            {
+                "Columns": 3,
+                "Rows": 1,
+                "ActionBody": "waybill_10_" + get_waybill_button(vid, "10")[2],
+                "ActionType": get_waybill_button(vid, "10")[1],
+                "Silent": "true",
+                "Text": "<font color='#FFFFFF'>Показание одометра</font>",
+                "BgColor": get_waybill_button(vid, "10")[0]
+            },
+            {
+                "Columns": 3,
+                "Rows": 1,
+                "ActionBody": "waybill_11_" + get_waybill_button(vid, "11")[2],
+                "ActionType": get_waybill_button(vid, "11")[1],
+                "Silent": "true",
+                "Text": "<font color='#FFFFFF'>Установка времени</font>",
+                "BgColor": get_waybill_button(vid, "11")[0]
             },
             {
                 "Columns": 3,
@@ -1710,10 +1784,10 @@ def waybill_form(vid, number_button=None, text=None, order_data="", text_field="
                 "Columns": 3,
                 "Rows": 1,
                 "ActionBody": "send_waybill_application",
-                "ActionType": get_waybill_button(vid, "10")[1],
+                "ActionType": get_waybill_button(vid, "12")[1],
                 "Silent": "true",
                 "Text": "<font color='#FFFFFF'>Сформировать путёвку</font>",
-                "BgColor": get_waybill_button(vid, "10")[0]
+                "BgColor": get_waybill_button(vid, "12")[0]
             }
         ]
     }
@@ -2068,3 +2142,244 @@ def test_kb():
                 }
             ]
         })
+
+
+def create_car_form(vid, number_button=None, text=None, order_data="", text_field="regular", answered=False, data=""):
+    is_exists_car_buttons(vid)
+    if number_button is not None:
+        set_car_button(vid, number_button, answered)
+    else:
+        set_default_car_buttons(vid)
+    keyboard = {
+        "Type": "keyboard",
+        "CustomDefaultHeight": 60,
+        "InputFieldState": text_field,
+        "Buttons": [
+            {
+                "Columns": 6,
+                "Rows": 1,
+                "ActionBody": "car_0_" + get_car_button(vid, "0")[2],
+                "ActionType": get_car_button(vid, "0")[1],
+                "Silent": "true",
+                "Text": "<font color='#FFFFFF'>Марка</font>",
+                "BgColor": get_car_button(vid, "0")[0]
+            },
+            {
+                "Columns": 6,
+                "Rows": 1,
+                "ActionBody": "car_1_" + get_car_button(vid, "1")[2],
+                "ActionType": get_car_button(vid, "1")[1],
+                "Silent": "true",
+                "Text": "<font color='#FFFFFF'>Модель</font>",
+                "BgColor": get_car_button(vid, "1")[0]
+            },
+            {
+                "Columns": 6,
+                "Rows": 1,
+                "ActionBody": "car_2_" + get_car_button(vid, "2")[2],
+                "ActionType": get_car_button(vid, "2")[1],
+                "Silent": "true",
+                "Text": "<font color='#FFFFFF'>Номер</font>",
+                "BgColor": get_car_button(vid, "2")[0]
+            },
+            {
+                "Columns": 6,
+                "Rows": 1,
+                "ActionBody": "return-to-car-list",
+                "ActionType": get_car_button(vid, "3")[1],
+                "Silent": "true",
+                "Text": "<font color='#FFFFFF'>Сохранить</font>",
+                "BgColor": get_car_button(vid, "3")[0]
+            },
+            {
+                "Columns": 3,
+                "Rows": 1,
+                "ActionBody": "cars",
+                "ActionType": "reply",
+                "Silent": "true",
+                "Text": "<font color='#FFFFFF'>Назад</font>",
+                "BgColor": bg_color
+            },
+            {
+                "Columns": 3,
+                "Rows": 1,
+                "ActionBody": "menu",
+                "ActionType": "reply",
+                "Silent": "true",
+                "Text": "<font color='#FFFFFF'>В главное меню</font>",
+                "BgColor": bg_color
+            }
+        ]
+    }
+
+    if text is None:
+        return KeyboardMessage(min_api_version=6, keyboard=keyboard, tracking_data="kb-create-car-form")
+    return TextMessage(text=text, min_api_version=6, keyboard=keyboard, tracking_data="create-car-form_" + order_data)
+
+
+def cars():
+    keyboard = {
+        "Type": "keyboard",
+        "InputFieldState": "hidden",
+        "Buttons": [
+            {
+                "Columns": 6,
+                "Rows": 1,
+                "ActionBody": "my-cars",
+                "ActionType": "reply",
+                "Silent": "true",
+                "Text": "<font color='#FFFFFF'>Мои автомобили</font>",
+                "BgColor": bg_color
+            },
+            {
+                "Columns": 6,
+                "Rows": 1,
+                "ActionBody": "choice-car",
+                "ActionType": "reply",
+                "Silent": "true",
+                "Text": "<font color='#FFFFFF'>Выбрать автомобиль</font>",
+                "BgColor": bg_color
+            }
+        ]
+    }
+    return KeyboardMessage(min_api_version=6, keyboard=keyboard)
+
+
+def my_cars(vid):
+    s = Subscriber.objects.get(user=vid)
+    buttons = [
+        {
+            "Columns": 3,
+            "Rows": 1,
+            "ActionBody": "cars",
+            "ActionType": "reply",
+            "Silent": "true",
+            "Text": "<font color='#FFFFFF'>Назад</font>",
+            "BgColor": bg_color
+        },
+        {
+            "Columns": 3,
+            "Rows": 1,
+            "ActionBody": "menu",
+            "ActionType": "reply",
+            "Silent": "true",
+            "Text": "<font color='#FFFFFF'>В главное меню</font>",
+            "BgColor": bg_color
+        }
+    ]
+    my_cars_filter = Car.objects.filter(car_owner=s)
+    if my_cars_filter.exists():
+        for car in my_cars_filter.all():
+            buttons.append(
+                {
+                    "Columns": 5,
+                    "Rows": 1,
+                    "ActionBody": "reply",
+                    "ActionType": "none",
+                    "Silent": "true",
+                    "Text": "<font color='#FFFFFF'>" + str(car.car_brand) + " " + str(car.car_model) + " " + str(
+                        car.car_number) + "</font>",
+
+                    "BgColor": bg_color
+                })
+            buttons.append(
+                {
+                    "Columns": 1,
+                    "Rows": 1,
+                    "ActionBody": "del-car_" + str(car.car_number),
+                    "ActionType": "reply",
+                    "Silent": "true",
+                    "Text": "<font color='#ff0000'>❌</font>",
+                    "BgColor": bg_color
+                }
+            )
+    keyboard = {
+        "Type": "keyboard",
+        "InputFieldState": "hidden",
+        "Buttons": buttons
+    }
+    return KeyboardMessage(min_api_version=6, keyboard=keyboard)
+
+
+def list_of_cars(vid):
+    s = Subscriber.objects.get(user=vid)
+    my_cars_filter = Car.objects.filter(car_owner=s)
+    choiced_cars = []
+    if my_cars_filter.exists():
+        for car in my_cars_filter.all():
+            choiced_cars.append(car.car_number)
+    buttons = [
+        {
+            "Columns": 3,
+            "Rows": 1,
+            "ActionBody": "cars",
+            "ActionType": "reply",
+            "Silent": "true",
+            "Text": "<font color='#FFFFFF'>Назад</font>",
+            "BgColor": bg_color
+        },
+        {
+            "Columns": 3,
+            "Rows": 1,
+            "ActionBody": "menu",
+            "ActionType": "reply",
+            "Silent": "true",
+            "Text": "<font color='#FFFFFF'>В главное меню</font>",
+            "BgColor": bg_color
+        },
+        {
+            "Columns": 6,
+            "Rows": 1,
+            "ActionBody": "create-car",
+            "ActionType": "reply",
+            "Silent": "true",
+            "Text": "<font color='#FFFFFF'>Добавить автомобиль +</font>",
+            "BgColor": bg_color
+        }
+    ]
+    for car in Car.objects.all():
+        if car.car_number in choiced_cars:
+            action_type = 'none'
+            color = non_active_button_color
+        else:
+            action_type = 'reply'
+            color = bg_color
+
+        buttons.append(
+            {
+                "Columns": 3,
+                "Rows": 1,
+                "ActionBody": "add-car_" + str(car.car_number),
+                "ActionType": action_type,
+                "Silent": "true",
+                "Text": "<font color='#FFFFFF'>" + str(car.car_brand) + " " + str(car.car_model) + " " + str(
+                    car.car_number) + "</font>",
+
+                "BgColor": color
+            })
+
+    keyboard = {
+        "Type": "keyboard",
+        "InputFieldState": "hidden",
+        "Buttons": buttons
+    }
+    return KeyboardMessage(min_api_version=6, keyboard=keyboard)
+
+
+# def list_colors__my_car(vid):
+#     s = Subscriber.objects.get(user=vid)
+#     my_cars_filter = Car.objects.filter(car_owner=s)
+#     colors_and_type_actions = []
+#     all_cars = [car for car in Car.objects.all()]
+#     list_of_my_car = []
+#     if my_cars_filter.exists():
+#         for car in Car.objects.all():
+#             for my_car in my_cars_filter.all():
+#                 if car == my_car:
+#                     colors_and_type_actions.append((non_active_button_color, 'none',))
+#                 else:
+#                     colors_and_type_actions.append((bg_color, 'reply',))
+#     return colors_and_type_actions
+                # action_type = 'none'
+                # color = non_active_button_color
+

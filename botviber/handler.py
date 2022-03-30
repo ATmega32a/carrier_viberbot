@@ -8,6 +8,7 @@ import requests
 
 from viberbot.api.messages import TextMessage, KeyboardMessage
 
+import order
 from botviber.bot_config import viber
 from botviber.buttons.buttons import choice_service, info, from_address, to_address, get_phone, \
     comment, order_kb, return_to_menu_rich, job_application_form, choice_evacuator_tariff, choice_cargo_tariff, \
@@ -17,9 +18,9 @@ from botviber.buttons.buttons import choice_service, info, from_address, to_addr
     show_all_orders_or_less_remote_locations_kb, driver_location_kb, balance_kb, license_form, choice_region_kb, \
     send_request_or_come_back, get_phone_for_letter, waybill_form, return_waybill_document, \
     download_waybill_or_edit_kb, is_exists_waybill_buttons, back_or_main_menu, access_denied, payment_for_services, \
-    test_kb
+    test_kb, cars, my_cars, list_of_cars, create_car_form
 from botviber.models import QuestionnaireButtons, ConditionsForRegions, WaybillQuestionnaireButtons, \
-    LicensingQuestionnaireButtons
+    LicensingQuestionnaireButtons, CarQuestionnaireButtons
 from carrier_viberbot.cancel_order import cancel
 from carrier_viberbot.osm import get_address, coordinates_from_address
 from carrier_viberbot.send_email import send_email
@@ -36,6 +37,7 @@ tariffs = {"4": "Эвакуатор до 2000 кг.", "5": "Эвакуатор �
            "7": "Эвакуатор до 4000 кг.", "8": "Грузовой 1,5т"}
 names_for_files = {"6": "passport_first_page", "7": "passport_registration", "8": "sts_front_side",
                    "9": "sts_back_side"}
+local_storage = {}
 
 time_zones = {
     -12: "в формате UTC-12",
@@ -101,7 +103,9 @@ def is_exists_questionnaire(vid):
 def is_exists_car(vid):
     s = Subscriber.objects.get(user=vid)
     if not Car.objects.filter(car_owner=s).exists():
-        Car.objects.create(car_owner=s)
+        print("Re")
+        # Car.objects.create(car_brand="", car_model="", car_number="new")
+        # car = Car.objects.get()
 
 
 def is_exists_licensing_questionnaire(vid):
@@ -113,7 +117,7 @@ def is_exists_licensing_questionnaire(vid):
 def is_exists_waybill_questionnaire(vid):
     s = Subscriber.objects.get(user=vid)
     if not WaybillEntry.objects.filter(applicant=s).exists():
-        WaybillEntry.objects.create(applicant=s)
+        WaybillEntry.objects.create(applicant=s, phone=s.phone)
 
 
 def set_answer(vid, data, item):
@@ -191,9 +195,6 @@ def set_answer_licensing_question(vid, data, item):
     elif item == "9":
         licensing_questionnaire.photo_sts_back_side_path = str(data)
         licensing_questionnaire.save()
-    elif item == "10":
-        licensing_questionnaire.license_number = str(data)
-        licensing_questionnaire.save()
 
 
 def set_answer_waybill_question(vid, data, item):
@@ -216,18 +217,24 @@ def set_answer_waybill_question(vid, data, item):
         waybill_questionnaire.num_doc = data
         waybill_questionnaire.save()
     elif item == "5":
-        waybill_questionnaire.kod_org_doc = data
+        waybill_questionnaire.num_lic = data
         waybill_questionnaire.save()
     elif item == "6":
-        waybill_questionnaire.tr_reg_num = data
+        waybill_questionnaire.kod_org_doc = data
         waybill_questionnaire.save()
     elif item == "7":
-        waybill_questionnaire.tr_mark = data
+        waybill_questionnaire.tr_reg_num = data
         waybill_questionnaire.save()
     elif item == "8":
-        waybill_questionnaire.odometer_value = data
+        waybill_questionnaire.tr_mark = data
         waybill_questionnaire.save()
     elif item == "9":
+        waybill_questionnaire.tr_model = data
+        waybill_questionnaire.save()
+    elif item == "10":
+        waybill_questionnaire.odometer_value = data
+        waybill_questionnaire.save()
+    elif item == "11":
         if validate_time_format(data):
             time_zone = set_tz(data)
             waybill_questionnaire.time_zone = time_zone
@@ -241,11 +248,35 @@ def set_answer_waybill_question(vid, data, item):
             except KeyError:
                 text = "Вы, вероятно, ошиблись при вводе времени! Пожалуйста, напишите время в формате Часы-Минуты, " \
                        "например: 12-45"
-                return "retry_9_" + text
+                return "retry_10_" + text
         else:
             text = "Ваш ввод не соответствует формату времени, пожалуйста, напишите время в формате Часы-Минуты, " \
                    "например: 12-45"
-            return "retry_9_" + text
+            return "retry_10_" + text
+
+
+def set_value_car(vid, data, item):
+    local_storage.update({item + vid: data})
+    s = Subscriber.objects.get(user=vid)
+    car_num_filter = s.cars.filter(car_number="?")
+    car_brand_filter = s.cars.filter(car_brand="?")
+    car_model_filter = s.cars.filter(car_model="?")
+
+    if not car_num_filter.exists() and not car_brand_filter.exists() and not car_model_filter:
+        s.cars.create(car_brand="?", car_model="?", car_number="?")
+    try:
+        car = s.cars.get(car_number="?")
+    except order.models.Car.DoesNotExist:
+        car = s.cars.get(car_number=local_storage["2" + vid])
+    if item == "0":
+        car.car_brand = data
+        car.save()
+    elif item == "1":
+        car.car_model = data
+        car.save()
+    elif item == "2":
+        car.car_number = data
+        car.save()
 
 
 def is_exists_order(vid):
@@ -277,8 +308,7 @@ def get_licensing_answer_string(vid):
                     "Телефон: " + licensing_questionnaire.phone + "\n" + \
                     "Госномер: " + licensing_questionnaire.car_number + "\n" + \
                     "Марка: " + licensing_questionnaire.car_brand + "\n" + \
-                    "Модель: " + licensing_questionnaire.car_model + "\n" + \
-                    "Номер лицензии: " + licensing_questionnaire.license_number + "\n"
+                    "Модель: " + licensing_questionnaire.car_model + "\n"
     return answer_string
 
 
@@ -299,16 +329,17 @@ def get_waybill_answer_string(vid, odometer_value=None):
                                                                                                     "Серия удостоверения: " + str(
             wq.ser_doc) + "\n" + \
         "Номер удостоверения: " + str(wq.num_doc) + "\n" + \
+        "Номер лицензии: " + str(wq.num_lic) + "\n" + \
         "Класс ТС: " + str(wq.kod_org_doc) + "\n" + \
         "Госномер: " + str(wq.tr_reg_num) + "\n" + \
         "Марка ТС: " + str(wq.tr_mark) + "\n" + \
+        "Модель ТС: " + str(wq.tr_model) + "\n" + \
         "Показание одометра: " + str(odometer_val) + "\n" + \
         "Контроль технического состояния пройден, выпуск на линию разрешён. " \
         "Контролёр технического состояния " \
         "автотранспортных средств : Рыбников Алексей Иванович.\n" + "" \
                                                                     "Прошёл предрейсовый медицинский осмотр, к исполнению трудовых обязанностей допущен. " \
                                                                     "Фельдшер: Дуткина Яна Андреевна."
-    print(answer_string)
     return answer_string
 
 
@@ -322,6 +353,16 @@ def get_order_string(vid):
                    "Стоимость: " + str(ordering.order_cost) + " руб.\n" + \
                    "Комментарий: " + ordering.comment + "\n"
     return order_string
+
+
+def get_creating_car_string(vid):
+    s = Subscriber.objects.get(user=vid)
+    car_questionnaire_buttons = CarQuestionnaireButtons.objects.get(user=s)
+    creating_car_string = \
+        "Марка: " + car_questionnaire_buttons.car_brand + "\n" + \
+        "Модель: " + car_questionnaire_buttons.car_model + "\n" + \
+        "Номер: " + car_questionnaire_buttons.car_number + "\n"
+    return creating_car_string
 
 
 def conditions(region):
@@ -365,7 +406,7 @@ def message_handler(viber_request):
         id_number = tracking_data.split('_')[1]
         n = id_number if id_number != "" else None
         count = LicensingQuestionnaireButtons.objects.get(user=subscriber).buttons.filter(action_type="none").count()
-        answered = True if count == 12 else False
+        answered = True if count == 11 else False
         if not action_body.startswith("license_") and not action_body.startswith("send_") and not action_body == "menu":
             set_answer_licensing_question(vid, action_body, id_number)
         viber.send_messages(vid, [license_form(vid=vid, number_button=n, text_field="hidden", answered=answered)])
@@ -388,7 +429,7 @@ def message_handler(viber_request):
                                         [waybill_form(vid=vid, number_button=n, text_field="hidden", answered=True)])
         else:
             count = WaybillQuestionnaireButtons.objects.get(user=subscriber).buttons.filter(action_type="none").count()
-            answered = True if count == 11 else False
+            answered = True if count == 13 else False
             if not action_body.startswith("waybill_") and not action_body.startswith("send_") \
                     and not action_body == "for-drivers":
                 res = set_answer_waybill_question(vid, action_body, id_number)
@@ -401,6 +442,16 @@ def message_handler(viber_request):
                 else:
                     viber.send_messages(vid, [
                         waybill_form(vid=vid, number_button=n, text_field="hidden", answered=answered)])
+
+    elif tracking_data.startswith("create-car-form"):
+        id_number = tracking_data.split('_')[1]
+        n = id_number if id_number != "" else None
+        count = CarQuestionnaireButtons.objects.get(user=subscriber).buttons.filter(action_type="none").count()
+        answered = True if count == 4 else False
+        if not action_body.startswith("car_") and not action_body.startswith("c") and not action_body == "menu":
+            set_value_car(vid, action_body, id_number)
+        viber.send_messages(vid,
+                            [create_car_form(vid=vid, number_button=n, text_field="hidden", answered=answered)])
 
     elif tracking_data == "from" and not action_body.startswith("/back"):
         from_loc = action_body + "#" + coordinates_from_address(action_body)
@@ -512,6 +563,7 @@ def message_handler(viber_request):
                    get_answer_string(vid))
         viber.send_messages(vid, [TextMessage(text="Ваша заявка отправлена\n" + get_answer_string(vid)),
                                   return_to_menu_rich()])
+
     elif action_body == "send_licensing_application":
         lq = LicensingQuestionnaire.objects.get(applicant=subscriber)
         try:
@@ -526,8 +578,8 @@ def message_handler(viber_request):
             #            body_text=get_licensing_answer_string(vid))
             t = Thread(target=send_email, args=["Запрос на лицензирование, " + str(lq.name),
                                                 get_licensing_answer_string(vid)])
+            t.setDaemon(True)
             t.start()
-            t.join()
             viber.send_messages(vid, [TextMessage(text="Ваша заявка отправлена\n" + get_licensing_answer_string(vid)),
                                       return_to_menu_rich()])
             return
@@ -579,11 +631,9 @@ def message_handler(viber_request):
         remove_old_files(user_path)
 
     elif action_body == "send_waybill_application":
-        url, path_to_pdf, file_name_pdf, user_path = waybill_build(vid)
-        viber.send_messages(vid,
-                            [TextMessage(text="Путевой лист легкового автомобиля\n" + get_waybill_answer_string(vid))])
-        viber.send_messages(vid, [return_waybill_document(url, file_name_pdf)])
-        remove_old_files(user_path)
+        t = Thread(target=waybill_send, args=[vid])
+        t.setDaemon(True)
+        t.start()
 
     elif action_body.startswith(server_url):
         save_waybill_to_journal()
@@ -596,9 +646,11 @@ def message_handler(viber_request):
                                    patronymic=wbe.patronymic,
                                    ser_doc=wbe.ser_doc,
                                    num_doc=wbe.num_doc,
+                                   num_lic=wbe.num_lic,
                                    kod_org_doc=wbe.kod_org_doc,
                                    tr_reg_num=wbe.tr_reg_num,
                                    tr_mark=wbe.tr_mark,
+                                   tr_model=wbe.tr_model,
                                    odometer_value=wbe.odometer_value,
                                    date=wbe.date,
                                    time=wbe.time,
@@ -786,11 +838,46 @@ def message_handler(viber_request):
 
         viber.send_messages(vid, [TextMessage(text="К оплате " + str(order.order_cost) + " руб.")])
         viber.send_messages(vid, [choice_service(vid)])
+    elif action_body == "cars":
+        viber.send_messages(vid, [cars()])
+    elif action_body.startswith("car"):
+        number_button = action_body.split('_')[1]
+        text = action_body.split('_')[2]
+        viber.send_messages(vid, [create_car_form(vid=vid, number_button=number_button, text=text,
+                                                  order_data=number_button, text_field="regular")])
+    elif action_body == "my-cars":
+        viber.send_messages(vid, [my_cars(vid)])
+    elif action_body == "choice-car":
+        viber.send_messages(vid, [list_of_cars(vid)])
+    elif action_body == "create-car":
+        viber.send_messages(vid, [create_car_form(vid=vid, number_button=None, text="Добавить автомобиль",
+                                                  text_field="hidden")])
+    elif action_body.startswith("add-car"):
+        car_number_for_del_auto = action_body.split('_')[1]
+        subscriber.cars.add(Car.objects.get(car_number=car_number_for_del_auto))
+        # "изменить цвет кнопки на серый"
+        viber.send_messages(vid, [list_of_cars(vid)])
+    elif action_body == "return-to-car-list":
+        viber.send_messages(vid, [list_of_cars(vid)])
+    elif action_body.startswith("del-car"):
+        car_number_for_del_auto = action_body.split('_')[1]
+        car_filter = Car.objects.filter(car_owner=subscriber)
+        if car_filter.exists():
+            subscriber.cars.remove(car_filter.get(car_number=car_number_for_del_auto))
+        viber.send_messages(vid, [my_cars(vid)])
     elif action_body == "balance-info":
         viber.send_messages(vid, [to_menu_rich(), TextMessage(text="Информация о балансе\nНа вашем счету ... руб.\n"),
                                   KeyboardMessage(keyboard=balance_kb(), min_api_version=6)])
     elif action_body.startswith("https://yoomoney.ru/"):
         return False
+
+
+def waybill_send(vid):
+    url, path_to_pdf, file_name_pdf, user_path = waybill_build(vid)
+    viber.send_messages(vid,
+                        [TextMessage(text="Путевой лист легкового автомобиля\n" + get_waybill_answer_string(vid))])
+    viber.send_messages(vid, [return_waybill_document(url, file_name_pdf)])
+    remove_old_files(user_path)
 
 
 def set_tz(data):
@@ -955,7 +1042,8 @@ def picture_handler(viber_request):
         subscriber = Subscriber.objects.get(user=vid)
         count = LicensingQuestionnaireButtons.objects.get(user=subscriber).buttons.filter(
             action_type="none").count()
-        answered = True if count == 12 else False
+        answered = True if count == 11 else False
+        # answered = True if count == 12 else False
         viber.send_messages(vid, [license_form(vid=vid, number_button=index, text_field="hidden",
                                                answered=answered, data=str(photo_filename))])
     elif tracking_data == "support_letter":

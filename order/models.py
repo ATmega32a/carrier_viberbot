@@ -61,8 +61,6 @@ class LicensingQuestionnaire(models.Model):
     photo_sts_back_side_path = models.CharField("СТС задняя сторона", max_length=512,
                                                 default=str(Path(MEDIA_ROOT)) + "\\no_photo.png")
 
-    license_number = models.CharField("Номер лицензии", max_length=30, default="Номер лицензии не указан")
-
     # def image_passport_first(self):
     #     if self.photo_passport_first:
     #         from django.utils.safestring import mark_safe
@@ -107,6 +105,7 @@ class LicensingQuestionnaire(models.Model):
 
 class WaybillEntry(models.Model):
     applicant = models.ForeignKey(Subscriber, on_delete=models.CASCADE, verbose_name="Заявитель")
+    phone = models.CharField("Номер телефона", max_length=50, default="")
     number = models.PositiveIntegerField("Номер путевого листа", default=0)
     id_client = models.PositiveIntegerField("Гаражный номер", default=0)
     surname = models.CharField("Фамилия", max_length=50, default="")  # Фамилия водителя
@@ -114,9 +113,11 @@ class WaybillEntry(models.Model):
     patronymic = models.CharField("Отчество", max_length=50, default="")  # Отчество водителя
     ser_doc = models.CharField("Серия удостоверения", max_length=10, default="")  # Серия удостоверения
     num_doc = models.CharField("Номер удостоверения", max_length=10, default="")  # Номер удостоверения
+    num_lic = models.CharField("Номер лицензии", max_length=10, default="")  # Номер удостоверения
     kod_org_doc = models.CharField("Класс ТС", max_length=2, default="")  # Класс ТС A,B,C ...
     tr_reg_num = models.CharField("Гос. номер ТС", max_length=12, default="")  # Гос. номер ТС
     tr_mark = models.CharField("Марка ТС", max_length=50, default="")  # Марка ТС
+    tr_model = models.CharField("Модель ТС", max_length=50, default="")
     odometer_value = models.CharField("Показание одометра при выезде", max_length=8, default="")  # Показание одометра
     time_zone = models.CharField("Часовой пояс", max_length=2, default="3")
     date = models.CharField("Дата выезда", max_length=10, default="")
@@ -129,6 +130,7 @@ class WaybillEntry(models.Model):
 
 class WaybillNote(models.Model):
     applicant = models.CharField("Заявитель", max_length=30, default="")
+    phone = models.CharField("Номер телефона", max_length=50, default="")
     number = models.PositiveIntegerField("Номер путевого листа", default=0)
     id_client = models.PositiveIntegerField("Гаражный номер", default=0)
     surname = models.CharField("Фамилия", max_length=50, default="")  # Фамилия водителя
@@ -136,9 +138,11 @@ class WaybillNote(models.Model):
     patronymic = models.CharField("Отчество", max_length=50, default="")  # Отчество водителя
     ser_doc = models.CharField("Серия удостоверения", max_length=10, default="")  # Серия удостоверения
     num_doc = models.CharField("Номер удостоверения", max_length=10, default="")  # Номер удостоверения
+    num_lic = models.CharField("Номер лицензии", max_length=10, default="")  # Номер удостоверения
     kod_org_doc = models.CharField("Класс ТС", max_length=2, default="")  # Класс ТС A,B,C ...
     tr_reg_num = models.CharField("Гос. номер ТС", max_length=12, default="")  # Гос. номер ТС
     tr_mark = models.CharField("Марка ТС", max_length=50, default="")  # Марка ТС
+    tr_model = models.CharField("Марка ТС", max_length=50, default="")  # Марка ТС
     odometer_value = models.CharField("Показание одометра при выезде", max_length=8, default="")  # Показание одометра
     date = models.CharField("Дата выезда", max_length=10, default="")
     time = models.CharField("Время выезда", max_length=5, default="")
@@ -178,11 +182,16 @@ class WaybillJournal(models.Model):
 
 
 class Car(models.Model):
-    car_owner = models.ForeignKey(Subscriber, verbose_name='Владелец автомобиля', on_delete=models.CASCADE)
+    car_owner = models.ManyToManyField(Subscriber, verbose_name='Владелец автомобиля', related_name="cars")
+    # car_owner = models.ForeignKey(Subscriber, verbose_name='Владелец автомобиля', on_delete=models.CASCADE)
     car_brand = models.CharField(max_length=50, default='Модель не указана')
     car_model = models.CharField(max_length=50, default='Модель не указана')
     car_number = models.CharField(max_length=50, default='Номер не указан')
+    is_blocked = models.BooleanField("Доступен", default=True)
 
     class Meta:
         verbose_name = "Автомобиль"
         verbose_name_plural = "Автомобили"
+
+    def __str__(self):
+        return str(self.car_brand) + " " + str(self.car_model) + " " + str(self.car_number)
